@@ -47,6 +47,11 @@ def print_board():
         # Function end
 
 
+# Check if the player or AI has won
+def win_check():
+    pass
+
+
 # Fire a shot at the other player's board
 def fire():
     pass
