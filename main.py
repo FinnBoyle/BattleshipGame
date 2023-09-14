@@ -72,10 +72,10 @@ def start_place_ships():
             print(ship_name)
 
     # board_in = input("Input board type: ")
-    ship_in = input("input ship type: ")
-    row_in = input("row (0-9): ")
-    col_in = input("col (0-9): ")
-    orientation_in = input("orientation (horizontal/vertical): ")
+    ship_in = input("Ship to deploy: ")
+    row_in = input("Vertical deployment location (0-9): ")
+    col_in = input("Horizontal deployment location (0-9): ")
+    orientation_in = input("Deployment orientation (horizontal or vertical): ")
 
     # Place ships on board and print board to user
     place_ships(player_board, ship_in, row_in, col_in, orientation_in)
@@ -99,26 +99,26 @@ def to_int(row, col):
 
 
 # Check if ship coordinates are usable
-def process_location(ship_type, row, col, length, orientation):
+def process_location(row, col, length, orientation):
     if not isinstance(row, int) or not isinstance(col, int) or not (0 <= row <= 9) or not (0 <= col <= 9):
         print("Coordinate values must be integers from 0-9!")
         return False
 
     if (orientation == "vertical" and row + length > 9) or (orientation == "horizontal" and col + length > 9):
-        print("Out of bounds ship placement.")
+        print("Input coordinates are out of ship placement bounds.")
         return False
 
     if orientation == "vertical" or orientation == "horizontal":
         return True
     else:
-        print("Unrecognised orientation type, only 'horizontal' or 'vertical' allowed")
+        print("Unrecognised orientation type, only 'horizontal' or 'vertical' allowed (case sensitive)")
         return False
 
 
 # Check if valid ship
 def process_ship_validity(ship_type):
     if ship_type not in ships:
-        print("Invalid ship type")
+        print("Invalid ship type detected, please use one from the (case sensitive) list!")
         return False
 
     return True
@@ -128,25 +128,37 @@ def process_ship_validity(ship_type):
 def place_ships(board, ship_type, row, col, orientation):
 
     row, col = to_int(row, col)
+    can_place = True
 
     if process_ship_validity(ship_type):
         ship_length = ships[ship_type]['length']
-        if process_location(ship_type, row, col, ship_length, orientation):
+        if process_location(row, col, ship_length, orientation):
             if ship_type in ships and not ships[ship_type]['is_placed']:
                 symbol = ships[ship_type]['symbol']
 
                 if orientation == "horizontal":
                     for i in range(ship_length):
-                        board[row][col + i] = ANSI_BLUE + symbol + ANSI_RESET
+                        if board[row][col + i] != "~":
+                            can_place = False
+                    for i in range(ship_length):
+                        if can_place:
+                            board[row][col + i] = ANSI_BLUE + symbol + ANSI_RESET
                 elif orientation == "vertical":
                     for i in range(ship_length):
-                        board[row + i][col] = ANSI_BLUE + symbol + ANSI_RESET
+                        if board[row + i][col] != "~":
+                            can_place = False
+                    for i in range(ship_length):
+                        if can_place:
+                            board[row + i][col] = ANSI_BLUE + symbol + ANSI_RESET
                 else:
-                    print("Unrecognised orientation type, only 'horizontal' or 'vertical' allowed")
+                    print("Unrecognised orientation type, only 'horizontal' or 'vertical' allowed (case sensitive).")
 
-                ships[ship_type]['is_placed'] = True
+                if not can_place:
+                    print("A pre-existing ship is blocking this placement location.")
+                else:
+                    ships[ship_type]['is_placed'] = True
             else:
-                print("Ship type unrecognised, or ship is already placed")
+                print("Ship type unrecognised, or ship is already placed.")
 
 
 # Game loop
@@ -156,7 +168,7 @@ while not game_over:
     while check_ships_placed() < len(ships):
         start_place_ships()
 
-    user_turn = input("Next step? ")
+    user_turn = input("Step? ")
 
     # Check if a hit, update game board
 
