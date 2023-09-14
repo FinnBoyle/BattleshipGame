@@ -7,13 +7,15 @@ rows, cols = (10, 10)
 player_board = [["~" for i in range(cols)] for j in range(rows)]
 ai_board = [["~" for i in range(cols)] for j in range(rows)]
 
+# Ship type, length, placement status and board symbol
 ships = {
-    "Carrier": 5,
-    "Battleship": 4,
-    "Cruiser": 3,
-    "Submarine": 3,
-    "Destroyer": 2
+    "Carrier": {'length': 5, 'is_placed': False, 'symbol': "A"},
+    "Battleship": {'length': 4, 'is_placed': False, 'symbol': "B"},
+    "Cruiser": {'length': 3, 'is_placed': False, 'symbol': "C"},
+    "Submarine": {'length': 3, 'is_placed': False, 'symbol': "S"},
+    "Destroyer": {'length': 2, 'is_placed': False, 'symbol': "D"}
 }
+num_ships_placed = 0
 
 # Text formatting
 ANSI_RESET = "\033[0m"
@@ -27,7 +29,7 @@ def print_board():
     i = 0
 
     print(ANSI_BOLD_RED + "     Player's Board" + " "*15 + "AI's Board     " + ANSI_RESET)
-    print(ANSI_BOLD_YELLOW + "  A B C D E F G H I J" + " "*9 + "A B C D E F G H I J" + ANSI_RESET)
+    print(ANSI_BOLD_YELLOW + "  0 1 2 3 4 5 6 7 8 9" + " "*9 + "0 1 2 3 4 5 6 7 8 9" + ANSI_RESET)
 
     for row in range(rows):
         print(ANSI_BOLD_YELLOW + str(i) + ANSI_RESET, end=' ')
@@ -62,75 +64,99 @@ def check_if_hit():
     pass
 
 
+# Start of game, place ships on board
+def start_place_ships():
+    print("Ships to launch: ")
+    for ship_name, attributes in ships.items():
+        if not attributes['is_placed']:
+            print(ship_name)
+
+    # board_in = input("Input board type: ")
+    ship_in = input("input ship type: ")
+    row_in = input("row (0-9): ")
+    col_in = input("col (0-9): ")
+    orientation_in = input("orientation (horizontal/vertical): ")
+
+    # Place ships on board and print board to user
+    place_ships(player_board, ship_in, row_in, col_in, orientation_in)
+    print_board()
+
+
+# Check the number of ships that have been placed
+def check_ships_placed():
+    return sum(1 for ship in ships.values() if ship['is_placed'])
+
+
+# convert coordinate inputs to integers
+def to_int(row, col):
+    try:
+        row = int(row)
+        col = int(col)
+    except ValueError:
+        row = -1
+        col = -1
+    return row, col
+
+
+# Check if ship coordinates are usable
+def process_location(ship_type, row, col, length, orientation):
+    if not isinstance(row, int) or not isinstance(col, int) or not (0 <= row <= 9) or not (0 <= col <= 9):
+        print("Coordinate values must be integers from 0-9!")
+        return False
+
+    if (orientation == "vertical" and row + length > 9) or (orientation == "horizontal" and col + length > 9):
+        print("Out of bounds ship placement.")
+        return False
+
+    if orientation == "vertical" or orientation == "horizontal":
+        return True
+    else:
+        print("Unrecognised orientation type, only 'horizontal' or 'vertical' allowed")
+        return False
+
+
+# Check if valid ship
+def process_ship_validity(ship_type):
+    if ship_type not in ships:
+        print("Invalid ship type")
+        return False
+
+    return True
+
+
 # Place ships on your board
 def place_ships(board, ship_type, row, col, orientation):
-    ship_length = ships[ship_type]
 
-    if ship_type == "Carrier":
-        if orientation == "horizontal":
-            for i in range(ship_length):
-                board[row][col + i] = ANSI_BLUE + "A" + ANSI_RESET
-        elif orientation == "vertical":
-            for i in range(ship_length):
-                board[row + i][col] = ANSI_BLUE + "A" + ANSI_RESET
-        else:
-            # Handle incorrect orientation input
-            pass
-    elif ship_type == "Battleship":
-        if orientation == "horizontal":
-            for i in range(ship_length):
-                board[row][col + i] = ANSI_BLUE + "B" + ANSI_RESET
-        elif orientation == "vertical":
-            for i in range(ship_length):
-                board[row + i][col] = ANSI_BLUE + "B" + ANSI_RESET
-        else:
-            # Handle incorrect orientation input
-            pass
-    elif ship_type == "Cruiser":
-        if orientation == "horizontal":
-            for i in range(ship_length):
-                board[row][col + i] = ANSI_BLUE + "C" + ANSI_RESET
-        elif orientation == "vertical":
-            for i in range(ship_length):
-                board[row + i][col] = ANSI_BLUE + "C" + ANSI_RESET
-        else:
-            # Handle incorrect orientation input
-            pass
-    elif ship_type == "Submarine":
-        if orientation == "horizontal":
-            for i in range(ship_length):
-                board[row][col + i] = ANSI_BLUE + "S" + ANSI_RESET
-        elif orientation == "vertical":
-            for i in range(ship_length):
-                board[row + i][col] = ANSI_BLUE + "S" + ANSI_RESET
-        else:
-            # Handle incorrect orientation input
-            pass
-    elif ship_type == "Destroyer":
-        if orientation == "horizontal":
-            for i in range(ship_length):
-                board[row][col + i] = ANSI_BLUE + "D" + ANSI_RESET
-        elif orientation == "vertical":
-            for i in range(ship_length):
-                board[row + i][col] = ANSI_BLUE + "S" + ANSI_RESET
-        else:
-            # Handle incorrect orientation input
-            pass
-    else:
-        # Handle incorrect ship type input
-        pass
+    row, col = to_int(row, col)
+
+    if process_ship_validity(ship_type):
+        ship_length = ships[ship_type]['length']
+        if process_location(ship_type, row, col, ship_length, orientation):
+            if ship_type in ships and not ships[ship_type]['is_placed']:
+                symbol = ships[ship_type]['symbol']
+
+                if orientation == "horizontal":
+                    for i in range(ship_length):
+                        board[row][col + i] = ANSI_BLUE + symbol + ANSI_RESET
+                elif orientation == "vertical":
+                    for i in range(ship_length):
+                        board[row + i][col] = ANSI_BLUE + symbol + ANSI_RESET
+                else:
+                    print("Unrecognised orientation type, only 'horizontal' or 'vertical' allowed")
+
+                ships[ship_type]['is_placed'] = True
+            else:
+                print("Ship type unrecognised, or ship is already placed")
 
 
 # Game loop
 while not game_over:
     print_board()
-    board_in = input("Input board type: ")
-    ship_in = input("input ship type: ")
-    row_in = input("row: ")
-    col_in = input("col: ")
-    orientation_in = input("orientation: ")
-    place_ships(player_board, ship_in, int(row_in), int(col_in), orientation_in)
-    user_turn = input("Player enter coordinates to fire: ")
+
+    while check_ships_placed() < len(ships):
+        start_place_ships()
+
+    user_turn = input("Next step? ")
 
     # Check if a hit, update game board
 
