@@ -35,7 +35,6 @@ ai_ships = {
     "Destroyer": {'length': 2, 'is_placed': False, 'symbol': "D", 'hits_to_sink': 2, 'is_sunk': False}
 }
 
-
 # Text formatting
 RESET = "\033[0m"
 B_RED = "\033[1;31m"
@@ -61,7 +60,7 @@ def print_board():
         for col in range(num_cols):
             print(player_board[row][col], end=' ')
 
-        print(" "*5, end=' ')
+        print(" " * 5, end=' ')
 
         print(MAGENTA + str(i) + RESET, end=' ')
 
@@ -79,7 +78,7 @@ def win_check():
         print(B_GREEN + " " * 8 + "PLAYER LOSES!" + RESET)
         return True
     elif all(ship['is_sunk'] for ship in ai_ships.values()):
-        print(B_RED + " "*8 + "PLAYER WINS!" + RESET)
+        print(B_RED + " " * 8 + "PLAYER WINS!" + RESET)
         return True
     else:
         return False
@@ -126,20 +125,20 @@ def check_if_hit(row, col, game_board, hidden_board):
     if hidden_board[row][col] == "~":
         hidden_board[row][col] = "M"
         game_board[row][col] = "M"
-        print(B_RED + " "*8 + "---Miss!---" + RESET)
-        print_board()
+        print(B_RED + " " * 8 + "---Miss!---" + RESET)
+        # print_board()
     # Is the shot going to hit a ship?
     elif hidden_board[row][col] in {ship['symbol'] for ship in player_ships.values()}:
         update_ship_status(row, col, hidden_board)
         hidden_board[row][col] = "H"
         game_board[row][col] = RED + "H" + RESET
-        print(B_GREEN + " "*8 + "---Hit!---" + RESET)
-        print_board()
+        print(B_GREEN + " " * 8 + "---Hit!---" + RESET)
+        # print_board()
     elif hidden_board[row][col] == "M" or hidden_board[row][col] == "H":
-        print(B_RED + " "*8 + "---Shot already taken in this location, fire again!---" + RESET)
+        print(B_RED + " " * 8 + "---Shot already taken in this location, fire again!---" + RESET)
     else:
-        print(B_RED + " "*8 + "---Could not check if shot hit.---" + RESET)
-        print_board()
+        print(B_RED + " " * 8 + "---Could not check if shot hit.---" + RESET)
+        # print_board()
 
 
 def update_ship_status(row, col, hidden_board):
@@ -153,7 +152,7 @@ def update_ship_status(row, col, hidden_board):
                 check_sunk(symbol)
                 break
     else:
-        print(B_RED + " "*8 + "---Ship hit not in dictionary.---" + RESET)
+        print(B_RED + " " * 8 + "---Ship hit not in dictionary.---" + RESET)
 
 
 def check_sunk(symbol):
@@ -177,6 +176,9 @@ def start_place_ships(public_board, hidden_board, is_ai):
 
         # Place ships on board and print board to user
         place_ships(public_board, hidden_board, ship_in, row_in, col_in, orientation_in, False)
+
+        # Print the board (player placement only!)
+        print_board()
     elif is_ai:
         unplaced = [ship_name for ship_name, attributes in ai_ships.items() if not attributes['is_placed']]
 
@@ -187,8 +189,6 @@ def start_place_ships(public_board, hidden_board, is_ai):
             rand_orient = random.choice(["vertical", "horizontal"])
 
             place_ships(public_board, hidden_board, random_ship, rand_row, rand_col, rand_orient, True)
-
-    print_board()
 
 
 # Check the number of ships that have been placed
@@ -211,21 +211,24 @@ def to_int(row, col):
 
 
 # Check if ship coordinates are usable
-def process_location(row, col, length, orientation):
+def process_location(row, col, length, orientation, is_ai):
     if not isinstance(row, int) or not isinstance(col, int) or not (0 <= row <= 9) or not (0 <= col <= 9):
-        print(RED + " "*8 + "---Coordinate values must be integers from 0-9!---" + RESET)
+        if not is_ai:
+            print(RED + " " * 8 + "---Coordinate values must be integers from 0-9!---" + RESET)
         return False
 
-    if (orientation == "vertical" and row + length > num_rows)\
+    if (orientation == "vertical" and row + length > num_rows) \
             or (orientation == "horizontal" and col + length > num_cols):
-        print(RED + " "*8 + "---Input coordinates are out of ship placement bounds.---" + RESET)
+        if not is_ai:
+            print(RED + " " * 8 + "---Input coordinates are out of ship placement bounds.---" + RESET)
         return False
 
     if orientation == "vertical" or orientation == "horizontal":
         return True
     else:
-        print(RED + " "*8 + "---Unrecognised orientation type, "
-                            "only 'horizontal' or 'vertical' allowed (case sensitive)---" + RESET)
+        if not is_ai:
+            print(RED + " " * 8 + "---Unrecognised orientation type, "
+                                  "only 'horizontal' or 'vertical' allowed (case sensitive)---" + RESET)
         return False
 
 
@@ -236,7 +239,7 @@ def process_ship_validity(ship_type, is_ai):
             return False
     elif not is_ai:
         if ship_type not in player_ships:
-            print(RED + " "*8 + "Invalid ship type detected, please use one from the (case sensitive) list!" + RESET)
+            print(RED + " " * 8 + "Invalid ship type detected, please use one from the (case sensitive) list!" + RESET)
             return False
 
     return True
@@ -244,7 +247,6 @@ def process_ship_validity(ship_type, is_ai):
 
 # Place ships on your board
 def place_ships(game_board, hidden_board, ship_type, row, col, orientation, is_ai):
-
     row, col = to_int(row, col)
     can_place = True
 
@@ -258,7 +260,7 @@ def place_ships(game_board, hidden_board, ship_type, row, col, orientation, is_a
             ship_length = which_ships[ship_type]['length']
 
         # Is the input location and orientation legal
-        if process_location(row, col, ship_length, orientation):
+        if process_location(row, col, ship_length, orientation, is_ai):
             # Is the ship already placed
             if ship_type in which_ships and not which_ships[ship_type]['is_placed']:
                 symbol = which_ships[ship_type]['symbol']
@@ -282,25 +284,25 @@ def place_ships(game_board, hidden_board, ship_type, row, col, orientation, is_a
                 else:
                     if not is_ai:
                         print(RED +
-                              " "*8 + "---Unrecognised orientation type, "
-                                      "only 'horizontal' or 'vertical' allowed (case sensitive).---"
+                              " " * 8 + "---Unrecognised orientation type, "
+                                        "only 'horizontal' or 'vertical' allowed (case sensitive).---"
                               + RESET)
                 # If the to-be-placed ship will overlap with another, deny placement, else allow
                 if not can_place:
                     if not is_ai:
-                        print(RED + " "*8 + "---A pre-existing ship is blocking this placement location.---" + RESET)
+                        print(RED + " " * 8 + "---A pre-existing ship is blocking this placement location.---" + RESET)
                 else:
                     which_ships[ship_type]['is_placed'] = True
             else:
                 if not is_ai:
-                    print(RED + " "*8 + "---Ship type unrecognised, or ship is already placed.---" + RESET)
+                    print(RED + " " * 8 + "---Ship type unrecognised, or ship is already placed.---" + RESET)
         else:
             if not is_ai:
-                print(RED + " "*8 + "---Could not verify ship placement coordinate data"
-                                    " (row, column, orientation).---" + RESET)
+                print(RED + " " * 8 + "---Could not verify ship placement coordinate data"
+                                      " (row, column, orientation).---" + RESET)
     else:
         if not is_ai:
-            print(RED + " "*8 + "---Could not verify ship type.---" + RESET)
+            print(RED + " " * 8 + "---Could not verify ship type.---" + RESET)
 
 
 # Game loop
@@ -308,18 +310,20 @@ while not game_over:
     print_board()
 
     # Allow player to place ships
-    if check_ships_placed(False) < len(player_ships):
+    while check_ships_placed(False) < len(player_ships):
         start_place_ships(player_board, player_hidden, False)
-    elif check_ships_placed(False) == len(player_ships) and not player_placed:
+
+    if check_ships_placed(False) == len(player_ships) and not player_placed:
         player_placed = True
-        print(B_GREEN + " "*8 + "---Player ships placed!---" + RESET)
+        print(B_GREEN + " " * 8 + "---Player ships placed!---" + RESET)
 
     # Randomly place AI ships
-    if check_ships_placed(True) < len(ai_ships):
+    while check_ships_placed(True) < len(ai_ships):
         start_place_ships(ai_board, ai_hidden, True)
-    elif check_ships_placed(True) == len(ai_ships) and not ai_placed:
+
+    if check_ships_placed(True) == len(ai_ships) and not ai_placed:
         ai_placed = True
-        print(B_GREEN + " "*8 + "---AI ships placed!---" + RESET)
+        print(B_GREEN + " " * 8 + "---AI ships placed!---" + RESET)
 
     if not win_check():
         user_turn = input("Step? ")
