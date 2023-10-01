@@ -1,5 +1,6 @@
 # Finn Boyle, 18034590
 import random
+import time
 
 # variables
 game_over = False
@@ -96,8 +97,8 @@ def check_input(row, col, hidden_board):
         return False
 
 
-# Fire a shot at the other player's board
-def fire(game_board, hidden_board):
+# Fire a shot at the AI board
+def player_shoot(game_board, hidden_board):
     confirm = False
 
     print(B_YELLOW + "Prepare to fire, enter coordinates: " + RESET)
@@ -118,6 +119,71 @@ def fire(game_board, hidden_board):
             check_if_hit(row_confirmed, col_confirmed, game_board, hidden_board)
         else:
             print(B_RED + "Location unconfirmed, re-enter coordinate data." + RESET)
+
+
+# AI fires a shot to the player board
+def ai_fire(game_board, hidden_board, row, col):
+    check_if_hit(row, col, game_board, hidden_board)
+
+
+# Random shot targeting (For the AI)
+def random_shot(board_search, hidden_search):
+    unknown = []
+    for rows, row in enumerate(hidden_search):
+        for cols, element in enumerate(hidden_search):
+            if element == "~":
+                unknown.append((rows, cols))
+    if len(unknown) > 0:
+        location = random.choice(unknown)
+        row, col = location
+        print(row + " " + col)
+        ai_fire(board_search, hidden_search, row, col)
+
+
+# AI implementation, to make choices on where to shoot
+def ai_shoot(board_search, hidden_search):
+    # setting up
+    unknown = []
+    for rows, row in enumerate(hidden_search):
+        for cols, element in enumerate(hidden_search):
+            if element == "~":
+                unknown.append((rows, cols))
+    hits = []
+    for rows, row in enumerate(hidden_search):
+        for cols, element in enumerate(hidden_search):
+            if element == "H":
+                hits.append((rows, cols))
+
+    # Search near hits
+    search_near_hits = []
+    search_further_hits = []
+    for u in unknown:
+        if u+1 in hits or u-1 in hits or u+10 in hits or u-10 in hits:
+            search_near_hits.append(u)
+        if u+2 in hits or u-2 in hits or u+20 in hits or u-20 in hits:
+            search_further_hits.append(u)
+
+    # pick direct neighbour location with nearby hit and further neighbour hit
+    for u in unknown:
+        if u in search_further_hits and search_further_hits:
+            location = random.choice(u)
+            row, col = location
+            print(row + " " + col)
+            ai_fire(board_search, hidden_search, row, col)
+            return
+
+    # Pick location of unknown direct neighbour of a hit
+    if len(search_near_hits) > 0:
+        location = random.choice(search_near_hits)
+        row, col = location
+        print(row + " " + col)
+        ai_fire(board_search, hidden_search, row, col)
+        return
+
+    # Checkerboard pattern
+
+    # Random shot
+    random_shot(player_board, player_hidden)
 
 
 # Check if a shot hit
@@ -326,8 +392,13 @@ while not game_over:
         print(B_GREEN + " " * 8 + "---AI ships placed!---" + RESET)
 
     if not win_check():
-        user_turn = input("Step? ")
-        fire(ai_board, ai_hidden)
+        player_shoot(ai_board, ai_hidden)
+
+        time.sleep(0.5)
+
+        ai_shoot(player_board, player_hidden)
+
+        time.sleep(0.5)
     else:
         game_over = win_check()
     # Check if a hit, update game board
