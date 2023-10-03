@@ -1,6 +1,7 @@
 # Finn Boyle, 18034590
 import random
 import time
+import numpy as np
 
 # variables
 game_over = False
@@ -140,13 +141,13 @@ def ai_fire(game_board, hidden_board, row, col):
 def random_shot(board_search, hidden_search):
     unknown = []
     for rows, row in enumerate(hidden_search):
-        for cols, element in enumerate(hidden_search):
+        for cols, element in enumerate(row):
             if element == "~":
                 unknown.append((rows, cols))
     if len(unknown) > 0:
         location = random.choice(unknown)
         row, col = location
-        print(row + " RANDOM HITS TEST " + col)
+        print(row + col)
         ai_fire(board_search, hidden_search, row, col)
 
 
@@ -156,12 +157,12 @@ def ai_shoot(board_search, hidden_search):
     # setting up
     unknown = []
     for rows, row in enumerate(hidden_search):
-        for cols, element in enumerate(hidden_search):
+        for cols, element in enumerate(row):
             if element == "~":
                 unknown.append((rows, cols))
     hits = []
     for rows, row in enumerate(hidden_search):
-        for cols, element in enumerate(hidden_search):
+        for cols, element in enumerate(row):
             if element == "H":
                 hits.append((rows, cols))
     print(unknown)
@@ -170,9 +171,11 @@ def ai_shoot(board_search, hidden_search):
     search_near_hits = []
     search_further_hits = []
     for u in unknown:
-        if u+1 in hits or u-1 in hits or u+10 in hits or u-10 in hits:
+        if tuple(np.add(u, (0,1))) in hits or tuple(np.subtract(u, (0, 1))) in hits \
+                or tuple(np.add(u, (1, 0))) in hits or tuple(np.subtract(u, (1,0))) in hits:
             search_near_hits.append(u)
-        if u+2 in hits or u-2 in hits or u+20 in hits or u-20 in hits:
+        if tuple(np.add(u, (0,2))) in hits or tuple(np.subtract(u, (0, 2))) in hits \
+                or tuple(np.add(u, (2, 0))) in hits or tuple(np.subtract(u, (2,0))) in hits:
             search_further_hits.append(u)
 
     # pick direct neighbour location with nearby hit and further neighbour hit
@@ -180,7 +183,7 @@ def ai_shoot(board_search, hidden_search):
         if u in search_further_hits and search_further_hits:
             location = random.choice(u)
             row, col = location
-            print(row + " FURTHER HITS TEST " + col)
+            print(row + col)
             ai_fire(board_search, hidden_search, row, col)
             return
 
@@ -188,7 +191,7 @@ def ai_shoot(board_search, hidden_search):
     if len(search_near_hits) > 0:
         location = random.choice(search_near_hits)
         row, col = location
-        print(row + " NEAR HITS TEST " + col)
+        print(row + col)
         ai_fire(board_search, hidden_search, row, col)
         return
 
