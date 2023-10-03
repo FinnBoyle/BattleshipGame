@@ -147,13 +147,16 @@ def random_shot(board_search, hidden_search):
     if len(unknown) > 0:
         location = random.choice(unknown)
         row, col = location
-        print(row + col)
+
+        # print(row + col)
+
         ai_fire(board_search, hidden_search, row, col)
 
 
 # AI implementation, to make choices on where to shoot
 def ai_shoot(board_search, hidden_search):
-    print("I am doing something...")
+    # print("I am doing something...")
+
     # setting up
     unknown = []
     for rows, row in enumerate(hidden_search):
@@ -165,8 +168,10 @@ def ai_shoot(board_search, hidden_search):
         for cols, element in enumerate(row):
             if element == "H":
                 hits.append((rows, cols))
-    print(unknown)
-    print("here!")
+
+    # print(unknown)
+    # print("here!")
+
     # Search near hits
     search_near_hits = []
     search_further_hits = []
@@ -183,7 +188,9 @@ def ai_shoot(board_search, hidden_search):
         if u in search_further_hits and search_further_hits:
             # row, col = random.choice(u)
             row, col = u
-            print(row + col)
+
+            # print(row + col)
+
             ai_fire(board_search, hidden_search, row, col)
             return
 
@@ -191,7 +198,9 @@ def ai_shoot(board_search, hidden_search):
     if len(search_near_hits) > 0:
         location = random.choice(search_near_hits)
         row, col = location
-        print(row + col)
+
+        # print(row + col)
+
         ai_fire(board_search, hidden_search, row, col)
         return
 
@@ -207,14 +216,12 @@ def check_if_hit(row, col, game_board, hidden_board, is_ai):
         if hidden_board[row][col] == "~":
             hidden_board[row][col] = "M"
             game_board[row][col] = "M"
-            # print_board()
+
         # Is the shot going to hit a ship?
         elif hidden_board[row][col] in {ship['symbol'] for ship in player_ships.values()}:
             update_ship_status(row, col, hidden_board, is_ai)
             hidden_board[row][col] = "H"
             game_board[row][col] = RED + "H" + RESET
-            # print(B_GREEN + " " * 8 + "---Hit!---" + RESET)
-            # print_board()
         else:
             return
     else:
@@ -222,19 +229,16 @@ def check_if_hit(row, col, game_board, hidden_board, is_ai):
             hidden_board[row][col] = "M"
             game_board[row][col] = "M"
             print(B_RED + " " * 8 + "---Miss!---" + RESET)
-            # print_board()
         # Is the shot going to hit a ship?
         elif hidden_board[row][col] in {ship['symbol'] for ship in ai_ships.values()}:
             update_ship_status(row, col, hidden_board, is_ai)
             hidden_board[row][col] = "H"
             game_board[row][col] = RED + "H" + RESET
             print(B_GREEN + " " * 8 + "---Hit!---" + RESET)
-            # print_board()
         elif hidden_board[row][col] == "M" or hidden_board[row][col] == "H":
             print(B_RED + " " * 8 + "---Shot already taken in this location, fire again!---" + RESET)
         else:
             print(B_RED + " " * 8 + "---Could not check if shot hit.---" + RESET)
-            # print_board()
 
 
 def update_ship_status(row, col, hidden_board, is_ai):
@@ -277,7 +281,7 @@ def check_sunk(symbol, is_ai):
 # Start of game, place ships on board
 def start_place_ships(public_board, hidden_board, is_ai):
     if not is_ai:
-        """REMOVE ME LATER
+        """UNCOMMENT ME LATER
         print(B_YELLOW + "Ships to launch: " + RESET)
         for ship_name, attributes in player_ships.items():
             if not attributes['is_placed']:
@@ -295,6 +299,7 @@ def start_place_ships(public_board, hidden_board, is_ai):
         print_board()"""
         unplaced = [ship_name for ship_name, attributes in player_ships.items() if not attributes['is_placed']]
 
+        # TEST PLACEMENT, REPLACE WITH ABOVE BEFORE SUBMISSION
         if unplaced:
             random_ship = random.choice(unplaced)
             rand_row = random.randint(0, 9)
@@ -446,6 +451,7 @@ while not game_over:
 
     if check_ships_placed(True) == len(ai_ships) and not ai_placed:
         ai_placed = True
+        print_board()
         print(B_GREEN + " " * 8 + "---AI ships placed!---" + RESET)
 
     if not hidden_win_check():
@@ -458,12 +464,3 @@ while not game_over:
         time.sleep(0.5)
     else:
         game_over = win_check()
-    # Check if a hit, update game board
-
-    # AI's turn
-    # Implement AI logic to choose coordinates
-    # Check if a hit, update game board
-
-    # Check win condition
-
-# Ask if the user wants to play again
