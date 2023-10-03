@@ -10,16 +10,16 @@ player_placed = False
 ai_placed = False
 
 # Public boards (visible to player)
-player_board = [["~" for i in range(num_cols)] for j in range(num_rows)]
-ai_board = [["~" for i in range(num_cols)] for j in range(num_rows)]
+player_board = [["~" for _ in range(num_cols)] for _ in range(num_rows)]
+ai_board = [["~" for _ in range(num_cols)] for _ in range(num_rows)]
 
 # Aim boards, player shoots at AI board, and AI shoots at player board
-player_to_ai_board = [["~" for i in range(num_cols)] for j in range(num_rows)]
-ai_to_player_board = [["~" for i in range(num_cols)] for j in range(num_rows)]
+player_to_ai_board = [["~" for _ in range(num_cols)] for _ in range(num_rows)]
+ai_to_player_board = [["~" for _ in range(num_cols)] for _ in range(num_rows)]
 
 # Game boards without text formatting, for use in processing (inaccessible to player and AI)
-player_hidden = [["~" for i in range(num_cols)] for j in range(num_rows)]
-ai_hidden = [["~" for i in range(num_cols)] for j in range(num_rows)]
+player_hidden = [["~" for _ in range(num_cols)] for _ in range(num_rows)]
+ai_hidden = [["~" for _ in range(num_cols)] for _ in range(num_rows)]
 
 # Ship type, length, placement status and board symbol
 player_ships = {
