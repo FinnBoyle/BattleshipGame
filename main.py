@@ -2,6 +2,7 @@
 import random
 import time
 import numpy as np
+import csv
 
 # variables
 game_over = False
@@ -71,7 +72,6 @@ def print_board():
 
         print()
         i += 1
-        # Function end
 
 
 # If all player ships have been sunk, AI wins. If all AI ships sunk, player wins
@@ -148,14 +148,11 @@ def random_shot(board_search, hidden_search):
         location = random.choice(unknown)
         row, col = location
 
-        # print(row + col)
-
         ai_fire(board_search, hidden_search, row, col)
 
 
 # AI implementation, to make choices on where to shoot
 def ai_shoot(board_search, hidden_search):
-    # print("I am doing something...")
 
     # setting up
     unknown = []
@@ -169,10 +166,7 @@ def ai_shoot(board_search, hidden_search):
             if element == "H":
                 hits.append((rows, cols))
 
-    # print(unknown)
-    # print("here!")
-
-    # Search near hits
+    # Search area around hits
     search_near_hits = []
     search_further_hits = []
     for u in unknown:
@@ -183,30 +177,35 @@ def ai_shoot(board_search, hidden_search):
                 or tuple(np.add(u, (2, 0))) in hits or tuple(np.subtract(u, (2, 0))) in hits:
             search_further_hits.append(u)
 
-    # pick direct neighbour location with nearby hit and further neighbour hit
+    # 2 hits occurred side-by-side, search co-ordinates on either end of the 2 hits
     for u in unknown:
-        if u in search_further_hits and search_further_hits:
-            # row, col = random.choice(u)
+        if u in search_near_hits and u in search_further_hits:
             row, col = u
-
-            # print(row + col)
-
             ai_fire(board_search, hidden_search, row, col)
             return
 
-    # Pick location of unknown direct neighbour of a hit
+    # Hit occurred, search co-ordinates directly next to this hit
     if len(search_near_hits) > 0:
         location = random.choice(search_near_hits)
         row, col = location
-
-        # print(row + col)
-
         ai_fire(board_search, hidden_search, row, col)
         return
 
-    # Checkerboard pattern
+    # If no potential/successful hits, search every other co-ordinate (as smallest ship is of length 2)
+    checkerboard = []
+    for u in unknown:
+        row, col = u
+        row = row % 10
+        col = col % 10
+        if (row + col) % 2 == 0:
+            checkerboard.append(u)
 
-    # Random shot
+    if len(checkerboard) > 0:
+        row, col = random.choice(checkerboard)
+        ai_fire(board_search, hidden_search, row, col)
+        return
+
+    # Random shot if all else fails
     random_shot(player_board, player_hidden)
 
 
@@ -433,6 +432,42 @@ def place_ships(game_board, hidden_board, ship_type, row, col, orientation, is_a
             print(RED + " " * 8 + "---Could not verify ship type.---" + RESET)
 
 
+# Open the csv file and update data values after a game
+def save_to_csv(board):
+    # Read in values
+    data = [['0' for _ in range(num_rows)] for _ in range(num_cols)]
+    with open('TrainingData.csv', 'r') as file:
+        reader = csv.reader(file)
+        for rows, row in enumerate(reader):
+            if rows < num_rows:
+                for cols, value in enumerate(row):
+                    if cols < num_cols:
+                        data[rows][cols] = value
+
+    hit_coords = []
+
+    for rows, row in enumerate(board):
+        for cols, element in enumerate(row):
+            if element == "H":
+                hit_coords.append((rows, cols))
+
+    for row, col in hit_coords:
+        if row < num_rows:
+            if col < num_cols:
+                current = int(data[row][col])
+                new = current + 1
+                data[row][col] = str(new)
+            else:
+                print(f"Invalid column index, row={row}, col={col}")
+        else:
+            print(f"Invalid row index, row={row}, col={col}")
+
+    # Write the updated data back to the csv
+    with open('TrainingData.csv', 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+
+
 # Game loop
 while not game_over:
     print_board()
@@ -463,4 +498,5 @@ while not game_over:
 
         time.sleep(0.5)
     else:
+        save_to_csv(player_hidden)
         game_over = win_check()
