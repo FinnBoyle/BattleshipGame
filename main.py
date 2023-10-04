@@ -9,6 +9,9 @@ game_over = False
 num_rows, num_cols = (10, 10)
 player_placed = False
 ai_placed = False
+can_read_in = True
+weighted_board = [[0 for _ in range(num_cols)] for _ in range(num_rows)]
+certainty = 0.65
 
 # Public boards (visible to player)
 player_board = [["~" for _ in range(num_cols)] for _ in range(num_rows)]
@@ -152,7 +155,7 @@ def random_shot(board_search, hidden_search):
 
 
 # AI implementation, to make choices on where to shoot
-def ai_shoot(board_search, hidden_search):
+def ai_shoot(board_search, hidden_search, weighted_search, required_certainty):
 
     # setting up
     unknown = []
@@ -192,8 +195,14 @@ def ai_shoot(board_search, hidden_search):
         return
 
     # Prioritise initial shots at locations with a high probability of containing a ship
-    weighted_search = read_from_csv()
-    probability = 0.65
+    potential_targets = []
+    for row in range(len(weighted_search)):
+        for col in range(len(weighted_search[row])):
+            if weighted_search[row][col] >= required_certainty:
+                potential_targets.append((row, col))
+                # Change original board, NOT the temporary board used in this function, for next use
+                weighted_board[row][col] = 0.0
+                # Change certainty for next time
     """
         FINISH CODE HERE
     """
@@ -205,6 +214,7 @@ def ai_shoot(board_search, hidden_search):
         if (row + col) % 2 == 0:
             dynamic_checkerboard.append(u)
 
+        # Determine ship dictionary target (for testing)
         if hidden_search == player_hidden:
             shipset_to_search = player_ships
         else:
@@ -550,7 +560,11 @@ while not game_over:
 
         time.sleep(0.2)
 
-        ai_shoot(player_board, player_hidden)
+        if can_read_in:
+            can_read_in = False
+            weighted_board = read_from_csv()
+
+        ai_shoot(player_board, player_hidden, weighted_board, certainty)
 
         time.sleep(0.2)
     else:
