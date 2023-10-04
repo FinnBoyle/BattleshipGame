@@ -191,17 +191,44 @@ def ai_shoot(board_search, hidden_search):
         ai_fire(board_search, hidden_search, row, col)
         return
 
+    # Prioritise initial shots at locations with a high probability of containing a ship
+    weighted_search = read_from_csv()
+    probability = 0.65
+    """
+        FINISH CODE HERE
+    """
+
     # If no potential/successful hits, search every other co-ordinate (as smallest ship is of length 2)
-    checkerboard = []
+    dynamic_checkerboard = []
     for u in unknown:
         row, col = u
-        row = row % 10
-        col = col % 10
         if (row + col) % 2 == 0:
-            checkerboard.append(u)
+            dynamic_checkerboard.append(u)
 
-    if len(checkerboard) > 0:
-        row, col = random.choice(checkerboard)
+        if hidden_search == player_hidden:
+            shipset_to_search = player_ships
+        else:
+            shipset_to_search = ai_ships
+
+        # If Carrier not sunk, check every 5th co-ordinate
+        if not shipset_to_search["Carrier"]["is_sunk"]:
+            if (row + col) % 5 == 0:
+                dynamic_checkerboard.append(u)
+        # If Battleship not sunk, check every 4th co-ordinate
+        elif not shipset_to_search["Battleship"]["is_sunk"]:
+            if (row + col) % 4 == 0:
+                dynamic_checkerboard.append(u)
+        # If Cruiser and Submarine not sunk, check every 3rd co-ordinate
+        elif not shipset_to_search["Cruiser"]["is_sunk"] and not shipset_to_search["Submarine"]["is_sunk"]:
+            if (row + col) % 3 == 0:
+                dynamic_checkerboard.append(u)
+        # If Destroyer not sunk, check every 2nd co-ordinate
+        else:
+            if (row + col) % 2 == 0:
+                dynamic_checkerboard.append(u)
+
+    if len(dynamic_checkerboard) > 0:
+        row, col = random.choice(dynamic_checkerboard)
         ai_fire(board_search, hidden_search, row, col)
         return
 
@@ -432,31 +459,56 @@ def place_ships(game_board, hidden_board, ship_type, row, col, orientation, is_a
             print(RED + " " * 8 + "---Could not verify ship type.---" + RESET)
 
 
-# Open the csv file and update data values after a game
-def save_to_csv(board):
+# Open the csv file and read in the contents to help aim AI shots
+def read_from_csv():
+    data = [[0 for _ in range(num_rows)] for _ in range(num_cols)]
+    max_value = -1
+
     # Read in values
-    data = [['0' for _ in range(num_rows)] for _ in range(num_cols)]
     with open('TrainingData.csv', 'r') as file:
         reader = csv.reader(file)
         for rows, row in enumerate(reader):
             if rows < num_rows:
                 for cols, value in enumerate(row):
                     if cols < num_cols:
+                        value = int(value)
                         data[rows][cols] = value
+                        if value > max_value:
+                            max_value = value
 
-    hit_coords = []
+    weighted_data = [[0 for _ in range(len(data[0]))] for _ in range(len(data))]
+    for row in range(len(data)):
+        for col in range(len(data[row])):
+            current = int(data[row][col])
+            weight = current / max_value
+            weighted_data[row][col] = weight
+    return weighted_data
 
+
+# Open the csv file and update data values after a game
+def save_to_csv(board):
+    # Read in values
+    data = [[0 for _ in range(num_rows)] for _ in range(num_cols)]
+    with open('TrainingData.csv', 'r') as file:
+        reader = csv.reader(file)
+        for rows, row in enumerate(reader):
+            if rows < num_rows:
+                for cols, value in enumerate(row):
+                    if cols < num_cols:
+                        data[rows][cols] = int(value)
+
+    ship_coords = []
     for rows, row in enumerate(board):
         for cols, element in enumerate(row):
-            if element == "H":
-                hit_coords.append((rows, cols))
+            if element != "~":
+                ship_coords.append((rows, cols))
 
-    for row, col in hit_coords:
+    for row, col in ship_coords:
         if row < num_rows:
             if col < num_cols:
                 current = int(data[row][col])
                 new = current + 1
-                data[row][col] = str(new)
+                data[row][col] = new
             else:
                 print(f"Invalid column index, row={row}, col={col}")
         else:
@@ -479,6 +531,8 @@ while not game_over:
     if check_ships_placed(False) == len(player_ships) and not player_placed:
         player_placed = True
         print(B_GREEN + " " * 8 + "---Player ships placed!---" + RESET)
+        # Store player placement locations for training purposes
+        save_to_csv(player_hidden)
 
     # Randomly place AI ships
     while check_ships_placed(True) < len(ai_ships):
@@ -492,11 +546,10 @@ while not game_over:
     if not hidden_win_check():
         player_shoot(ai_board, ai_hidden)
 
-        time.sleep(0.5)
+        time.sleep(0.2)
 
         ai_shoot(player_board, player_hidden)
 
-        time.sleep(0.5)
+        time.sleep(0.2)
     else:
-        save_to_csv(player_hidden)
         game_over = win_check()
