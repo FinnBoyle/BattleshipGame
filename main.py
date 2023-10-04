@@ -263,8 +263,10 @@ def check_if_hit(row, col, game_board, hidden_board, is_ai):
             print(B_GREEN + " " * 8 + "---Hit!---" + RESET)
         elif hidden_board[row][col] == "M" or hidden_board[row][col] == "H":
             print(B_RED + " " * 8 + "---Shot already taken in this location, fire again!---" + RESET)
+            player_shoot(game_board, hidden_board)
         else:
             print(B_RED + " " * 8 + "---Could not check if shot hit.---" + RESET)
+            player_shoot(game_board, hidden_board)
 
 
 def update_ship_status(row, col, hidden_board, is_ai):
