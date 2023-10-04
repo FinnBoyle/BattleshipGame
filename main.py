@@ -152,7 +152,6 @@ def random_shot(board_search, hidden_search):
 
 # AI implementation, to make choices on where to shoot
 def ai_shoot(board_search, hidden_search, weighted_search, required_certainty):
-
     # setting up
     unknown = []
     for rows, row in enumerate(hidden_search):
@@ -210,8 +209,6 @@ def ai_shoot(board_search, hidden_search, weighted_search, required_certainty):
     dynamic_checkerboard = []
     for u in unknown:
         row, col = u
-        if (row + col) % 2 == 0:
-            dynamic_checkerboard.append(u)
 
         # Determine ship dictionary target (for testing)
         if hidden_search == player_hidden:
@@ -251,12 +248,14 @@ def check_if_hit(row, col, game_board, hidden_board, is_ai):
         if hidden_board[row][col] == "~":
             hidden_board[row][col] = "M"
             game_board[row][col] = "M"
+            print(B_GREEN + " " * 8 + "---No hits received.---" + RESET)
 
         # Is the shot going to hit a ship?
         elif hidden_board[row][col] in {ship['symbol'] for ship in player_ships.values()}:
             update_ship_status(row, col, hidden_board, is_ai)
             hidden_board[row][col] = "H"
             game_board[row][col] = RED + "H" + RESET
+            print(B_RED + " " * 8 + "---Player ship has been hit!---" + RESET)
         else:
             return
     else:
@@ -542,7 +541,6 @@ while not game_over:
 
     if check_ships_placed(True) == len(ai_ships) and not ai_placed:
         ai_placed = True
-        print_board()
         print(B_GREEN + " " * 8 + "---AI ships placed!---" + RESET)
 
     if not hidden_win_check():
