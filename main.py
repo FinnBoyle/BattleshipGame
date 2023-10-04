@@ -11,15 +11,11 @@ player_placed = False
 ai_placed = False
 can_read_in = True
 weighted_board = [[0 for _ in range(num_cols)] for _ in range(num_rows)]
-certainty = 0.65
+certainty = 0.85
 
 # Public boards (visible to player)
 player_board = [["~" for _ in range(num_cols)] for _ in range(num_rows)]
 ai_board = [["~" for _ in range(num_cols)] for _ in range(num_rows)]
-
-# Aim boards, player shoots at AI board, and AI shoots at player board
-player_to_ai_board = [["~" for _ in range(num_cols)] for _ in range(num_rows)]
-ai_to_player_board = [["~" for _ in range(num_cols)] for _ in range(num_rows)]
 
 # Game boards without text formatting, for use in processing (inaccessible to player and AI)
 player_hidden = [["~" for _ in range(num_cols)] for _ in range(num_rows)]
@@ -202,10 +198,13 @@ def ai_shoot(board_search, hidden_search, weighted_search, required_certainty):
                 potential_targets.append((row, col))
                 # Change original board, NOT the temporary board used in this function, for next use
                 weighted_board[row][col] = 0.0
-                # Change certainty for next time
-    """
-        FINISH CODE HERE
-    """
+    if len(potential_targets) == 0:
+        global certainty
+        certainty = certainty * 0.9
+    elif len(potential_targets) > 0:
+        row, col = random.choice(potential_targets)
+        ai_fire(board_search, hidden_search, row, col)
+        return
 
     # If no potential/successful hits, search every other co-ordinate (as smallest ship is of length 2)
     dynamic_checkerboard = []
@@ -319,7 +318,6 @@ def check_sunk(symbol, is_ai):
 # Start of game, place ships on board
 def start_place_ships(public_board, hidden_board, is_ai):
     if not is_ai:
-        """UNCOMMENT ME LATER
         print(B_YELLOW + "Ships to launch: " + RESET)
         for ship_name, attributes in player_ships.items():
             if not attributes['is_placed']:
@@ -334,17 +332,7 @@ def start_place_ships(public_board, hidden_board, is_ai):
         place_ships(public_board, hidden_board, ship_in, row_in, col_in, orientation_in, False)
 
         # Print the board (player placement only!)
-        print_board()"""
-        unplaced = [ship_name for ship_name, attributes in player_ships.items() if not attributes['is_placed']]
-
-        # TEST PLACEMENT, REPLACE WITH ABOVE BEFORE SUBMISSION
-        if unplaced:
-            random_ship = random.choice(unplaced)
-            rand_row = random.randint(0, 9)
-            rand_col = random.randint(0, 9)
-            rand_orient = random.choice(["vertical", "horizontal"])
-
-            place_ships(public_board, hidden_board, random_ship, rand_row, rand_col, rand_orient, False)
+        print_board()
     elif is_ai:
         unplaced = [ship_name for ship_name, attributes in ai_ships.items() if not attributes['is_placed']]
 
@@ -437,7 +425,8 @@ def place_ships(game_board, hidden_board, ship_type, row, col, orientation, is_a
                             can_place = False
                     for i in range(ship_length):
                         if can_place:
-                            game_board[row][col + i] = BLUE + symbol + RESET
+                            if not is_ai:
+                                game_board[row][col + i] = BLUE + symbol + RESET
                             hidden_board[row][col + i] = symbol
                 elif orientation == "vertical":
                     for i in range(ship_length):
@@ -445,7 +434,8 @@ def place_ships(game_board, hidden_board, ship_type, row, col, orientation, is_a
                             can_place = False
                     for i in range(ship_length):
                         if can_place:
-                            game_board[row + i][col] = BLUE + symbol + RESET
+                            if not is_ai:
+                                game_board[row + i][col] = BLUE + symbol + RESET
                             hidden_board[row + i][col] = symbol
                 else:
                     if not is_ai:
