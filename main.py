@@ -4,11 +4,13 @@ import time
 import numpy as np
 import csv
 
-# variables
+# Game setup variables
 game_over = False
 num_rows, num_cols = (10, 10)
 player_placed = False
 ai_placed = False
+
+# AI variables (Allow csv reading in only once, init weighted board and define required AI certainty)
 can_read_in = True
 weighted_board = [[0 for _ in range(num_cols)] for _ in range(num_rows)]
 certainty = 0.85
@@ -17,11 +19,11 @@ certainty = 0.85
 player_board = [["~" for _ in range(num_cols)] for _ in range(num_rows)]
 ai_board = [["~" for _ in range(num_cols)] for _ in range(num_rows)]
 
-# Game boards without text formatting, for use in processing (inaccessible to player and AI)
+# Game boards without text formatting, for use in game processing
 player_hidden = [["~" for _ in range(num_cols)] for _ in range(num_rows)]
 ai_hidden = [["~" for _ in range(num_cols)] for _ in range(num_rows)]
 
-# Ship type, length, placement status and board symbol
+# Ship type, length, placement status, symbol, hits remaining, and sink status for player and AI
 player_ships = {
     "Carrier": {'length': 5, 'is_placed': False, 'symbol': "A", 'hits_to_sink': 5, 'is_sunk': False},
     "Battleship": {'length': 4, 'is_placed': False, 'symbol': "B", 'hits_to_sink': 4, 'is_sunk': False},
@@ -49,7 +51,7 @@ BLUE = "\033[34m"
 MAGENTA = "\033[35m"
 
 
-# Print the boards of both the player and AI, side by side, one row at a time
+# Print the public boards of both the player and AI, side by side, one row at a time
 def print_board():
     i = 0
 
@@ -76,13 +78,12 @@ def print_board():
 # If all player ships have been sunk, AI wins. If all AI ships sunk, player wins
 def win_check():
     if all(ship['is_sunk'] for ship in player_ships.values()):
-        print(B_GREEN + " " * 8 + "PLAYER LOSES!" + RESET)
+        print(B_GREEN + " " * 35 + "AI WINS!" + RESET)
         return True
     elif all(ship['is_sunk'] for ship in ai_ships.values()):
-        print(B_RED + " " * 8 + "PLAYER WINS!" + RESET)
+        print(B_GREEN + " " * 6 + "PLAYER WINS!" + RESET)
         return True
-    else:
-        return False
+    return False
 
 
 # Same as win_check, but without printing to terminal
@@ -91,8 +92,7 @@ def hidden_win_check():
         return True
     elif all(ship['is_sunk'] for ship in ai_ships.values()):
         return True
-    else:
-        return False
+    return False
 
 
 # Check firing input coordinates
@@ -175,14 +175,14 @@ def ai_shoot(board_search, hidden_search, weighted_search, required_certainty):
                 or tuple(np.add(u, (2, 0))) in hits or tuple(np.subtract(u, (2, 0))) in hits:
             search_further_hits.append(u)
 
-    # 2 hits occurred side-by-side, search co-ordinates on either end of the 2 hits
+    # if 2 hits occur side-by-side, search co-ordinates on either end
     for u in unknown:
         if u in search_near_hits and u in search_further_hits:
             row, col = u
             ai_fire(board_search, hidden_search, row, col)
             return
 
-    # Hit occurred, search co-ordinates directly next to this hit
+    # If single hit occurrs, search co-ordinates directly next to this hit
     if len(search_near_hits) > 0:
         location = random.choice(search_near_hits)
         row, col = location
@@ -195,7 +195,7 @@ def ai_shoot(board_search, hidden_search, weighted_search, required_certainty):
         for col in range(len(weighted_search[row])):
             if weighted_search[row][col] >= required_certainty:
                 potential_targets.append((row, col))
-                # Change original board, NOT the temporary board used in this function, for next use
+                # Change original board, NOT the temporary board used in this function, for next shot
                 weighted_board[row][col] = 0.0
     if len(potential_targets) == 0:
         global certainty
@@ -205,7 +205,7 @@ def ai_shoot(board_search, hidden_search, weighted_search, required_certainty):
         ai_fire(board_search, hidden_search, row, col)
         return
 
-    # If no potential/successful hits, search every other co-ordinate (as smallest ship is of length 2)
+    # If no potential/successful hits available, search in checkerboard pattern
     dynamic_checkerboard = []
     for u in unknown:
         row, col = u
@@ -233,21 +233,23 @@ def ai_shoot(board_search, hidden_search, weighted_search, required_certainty):
             if (row + col) % 2 == 0:
                 dynamic_checkerboard.append(u)
 
+    # Target the checkerboard grid if not empty
     if len(dynamic_checkerboard) > 0:
         row, col = random.choice(dynamic_checkerboard)
         ai_fire(board_search, hidden_search, row, col)
         return
 
     # Random shot if all else fails
-    random_shot(player_board, player_hidden)
+    random_shot(board_search, hidden_search)
 
 
-# Check if a shot hit
+# Check shot, update board
 def check_if_hit(row, col, game_board, hidden_board, is_ai):
     if is_ai:
         if hidden_board[row][col] == "~":
             hidden_board[row][col] = "M"
             game_board[row][col] = "M"
+            time.sleep(0.2)
             print(B_GREEN + " " * 8 + "---No hits received.---" + RESET)
 
         # Is the shot going to hit a ship?
@@ -255,6 +257,7 @@ def check_if_hit(row, col, game_board, hidden_board, is_ai):
             update_ship_status(row, col, hidden_board, is_ai)
             hidden_board[row][col] = "H"
             game_board[row][col] = RED + "H" + RESET
+            time.sleep(0.2)
             print(B_RED + " " * 8 + "---Player ship has been hit!---" + RESET)
         else:
             return
@@ -262,13 +265,14 @@ def check_if_hit(row, col, game_board, hidden_board, is_ai):
         if hidden_board[row][col] == "~":
             hidden_board[row][col] = "M"
             game_board[row][col] = "M"
-            print(B_RED + " " * 8 + "---Miss!---" + RESET)
+            print(B_RED + " " * 8 + "---Miss!---\n" + RESET)
         # Is the shot going to hit a ship?
         elif hidden_board[row][col] in {ship['symbol'] for ship in ai_ships.values()}:
             update_ship_status(row, col, hidden_board, is_ai)
             hidden_board[row][col] = "H"
             game_board[row][col] = RED + "H" + RESET
-            print(B_GREEN + " " * 8 + "---Hit!---" + RESET)
+            print(B_GREEN + " " * 8 + "---Hit!---\n" + RESET)
+        # Safeties
         elif hidden_board[row][col] == "M" or hidden_board[row][col] == "H":
             print(B_RED + " " * 8 + "---Shot already taken in this location, fire again!---" + RESET)
             player_shoot(game_board, hidden_board)
@@ -277,12 +281,11 @@ def check_if_hit(row, col, game_board, hidden_board, is_ai):
             player_shoot(game_board, hidden_board)
 
 
+# Handles updating the AI and player ships' status, decrementing hits_to_sink, and checking for sinks
 def update_ship_status(row, col, hidden_board, is_ai):
     symbol = hidden_board[row][col]
     if is_ai:
-        # Check if symbol exists in the ship dictionary
         if symbol in {ship['symbol'] for ship in player_ships.values()}:
-            # Find the ship with the matching symbol and decrement its 'hits_to_sink' value
             for ship in player_ships.values():
                 if ship['symbol'] == symbol:
                     ship['hits_to_sink'] -= 1
@@ -291,9 +294,7 @@ def update_ship_status(row, col, hidden_board, is_ai):
         else:
             print(B_RED + " " * 8 + "---AI ERROR CODE: Ship hit not in dictionary.---" + RESET)
     else:
-        # Check if symbol exists in the ship dictionary
         if symbol in {ship['symbol'] for ship in ai_ships.values()}:
-            # Find the ship with the matching symbol and decrement its 'hits_to_sink' value
             for ship in ai_ships.values():
                 if ship['symbol'] == symbol:
                     ship['hits_to_sink'] -= 1
@@ -303,6 +304,7 @@ def update_ship_status(row, col, hidden_board, is_ai):
             print(B_RED + " " * 8 + "---Ship hit not in dictionary.---" + RESET)
 
 
+# Supporter for update_ship_status, updates sink status if any ship has 0 hits_to_sink
 def check_sunk(symbol, is_ai):
     if is_ai:
         for name, attributes in player_ships.items():
@@ -329,12 +331,9 @@ def start_place_ships(public_board, hidden_board, is_ai):
 
         # Place ships on board and print board to user
         place_ships(public_board, hidden_board, ship_in, row_in, col_in, orientation_in, False)
-
-        # Print the board (player placement only!)
         print_board()
     elif is_ai:
         unplaced = [ship_name for ship_name, attributes in ai_ships.items() if not attributes['is_placed']]
-
         if unplaced:
             random_ship = random.choice(unplaced)
             rand_row = random.randint(0, 9)
@@ -352,7 +351,7 @@ def check_ships_placed(is_ai):
         return sum(1 for ship in player_ships.values() if ship['is_placed'])
 
 
-# convert coordinate inputs to integers
+# convert player co-ordinate inputs to integers
 def to_int(row, col):
     try:
         row = int(row)
@@ -363,19 +362,17 @@ def to_int(row, col):
     return row, col
 
 
-# Check if ship coordinates are usable
+# Check if ship coordinates are usable (are integers, co-ords and ships are in bounds, and is valid direction)
 def process_location(row, col, length, orientation, is_ai):
     if not isinstance(row, int) or not isinstance(col, int) or not (0 <= row <= 9) or not (0 <= col <= 9):
         if not is_ai:
             print(RED + " " * 8 + "---Coordinate values must be integers from 0-9!---" + RESET)
         return False
-
     if (orientation == "vertical" and row + length > num_rows) \
             or (orientation == "horizontal" and col + length > num_cols):
         if not is_ai:
             print(RED + " " * 8 + "---Input coordinates are out of ship placement bounds.---" + RESET)
         return False
-
     if orientation == "vertical" or orientation == "horizontal":
         return True
     else:
@@ -394,7 +391,6 @@ def process_ship_validity(ship_type, is_ai):
         if ship_type not in player_ships:
             print(RED + " " * 8 + "Invalid ship type detected, please use one from the (case sensitive) list!" + RESET)
             return False
-
     return True
 
 
@@ -412,9 +408,9 @@ def place_ships(game_board, hidden_board, ship_type, row, col, orientation, is_a
             which_ships = player_ships
             ship_length = which_ships[ship_type]['length']
 
-        # Is the input location and orientation legal
+        # Is the input location and orientation allowed
         if process_location(row, col, ship_length, orientation, is_ai):
-            # Is the ship already placed
+            # Is the ship already placed?
             if ship_type in which_ships and not which_ships[ship_type]['is_placed']:
                 symbol = which_ships[ship_type]['symbol']
                 # Orientation then placement, checking for overlapped placements
@@ -460,12 +456,11 @@ def place_ships(game_board, hidden_board, ship_type, row, col, orientation, is_a
             print(RED + " " * 8 + "---Could not verify ship type.---" + RESET)
 
 
-# Open the csv file and read in the contents to help aim AI shots
+# Read in common ship placement data, transform for shot weighting
 def read_from_csv():
     data = [[0 for _ in range(num_rows)] for _ in range(num_cols)]
     max_value = -1
 
-    # Read in values
     with open('TrainingData.csv', 'r') as file:
         reader = csv.reader(file)
         for rows, row in enumerate(reader):
@@ -486,9 +481,8 @@ def read_from_csv():
     return weighted_data
 
 
-# Open the csv file and update data values after a game
+# Update common ship placements table with new placements
 def save_to_csv(board):
-    # Read in values
     data = [[0 for _ in range(num_rows)] for _ in range(num_cols)]
     with open('TrainingData.csv', 'r') as file:
         reader = csv.reader(file)
@@ -515,13 +509,12 @@ def save_to_csv(board):
         else:
             print(f"Invalid row index, row={row}, col={col}")
 
-    # Write the updated data back to the csv
     with open('TrainingData.csv', 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerows(data)
 
 
-# Game loop
+# Play a game of Battleship!
 while not game_over:
     print_board()
 
