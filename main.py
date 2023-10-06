@@ -195,14 +195,14 @@ def ai_shoot(board_search, hidden_search, weighted_search, required_certainty):
         for col in range(len(weighted_search[row])):
             if weighted_search[row][col] >= required_certainty:
                 potential_targets.append((row, col))
-                # Change original board, NOT the temporary board used in this function, for next shot
-                weighted_board[row][col] = 0.0
     if len(potential_targets) == 0:
         global certainty
         certainty = certainty * 0.9
     elif len(potential_targets) > 0:
         row, col = random.choice(potential_targets)
         ai_fire(board_search, hidden_search, row, col)
+        # Alter original weighted board, such that this location is not added to the potential shot list later
+        weighted_board[row][col] = 0.0
         return
 
     # If no potential/successful hits available, search in checkerboard pattern
